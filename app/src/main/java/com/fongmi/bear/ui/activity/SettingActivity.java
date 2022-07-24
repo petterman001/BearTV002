@@ -1,13 +1,21 @@
 package com.fongmi.bear.ui.activity;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
+import android.os.Environment;
+import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.content.ContextCompat;
 import androidx.leanback.widget.ArrayObjectAdapter;
 import androidx.leanback.widget.ItemBridgeAdapter;
 import androidx.viewbinding.ViewBinding;
@@ -30,6 +38,9 @@ public class SettingActivity extends BaseActivity {
     public static void start(Activity activity) {
         activity.startActivityForResult(new Intent(activity, SettingActivity.class), 1000);
     }
+
+    private final ActivityResultLauncher<String> launcherString = registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> loadConfig());
+    private final ActivityResultLauncher<Intent> launcherIntent = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> loadConfig());
 
     @Override
     protected ViewBinding getBinding() {
@@ -57,12 +68,22 @@ public class SettingActivity extends BaseActivity {
             mBinding.url.setText(Prefers.getUrl());
             Notify.progress(this);
             ApiConfig.get().clear();
-            loadConfig();
+            checkUrl();
         });
         bindingDialog.url.setOnEditorActionListener((textView, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE) dialog.getButton(DialogInterface.BUTTON_POSITIVE).performClick();
             return true;
         });
+    }
+
+    private void checkUrl() {
+        if (Prefers.getUrl().startsWith("file://") && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) {
+            launcherIntent.launch(new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION));
+        } else if (Prefers.getUrl().startsWith("file://") && Build.VERSION.SDK_INT < Build.VERSION_CODES.R && ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            launcherString.launch(Manifest.permission.READ_EXTERNAL_STORAGE);
+        } else {
+            loadConfig();
+        }
     }
 
     private void loadConfig() {
@@ -77,6 +98,7 @@ public class SettingActivity extends BaseActivity {
             @Override
             public void error(int resId) {
                 mBinding.home.setText(ApiConfig.get().getHome().getName());
+                setResult(RESULT_OK);
                 Notify.dismiss();
                 Notify.show(resId);
             }
