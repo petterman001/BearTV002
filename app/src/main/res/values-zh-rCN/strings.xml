@@ -1,7 +1,8 @@
 <resources xmlns:xliff="http://schemas.android.com/apk/res-auto">
 
     <!-- App -->
-    <string name="app_name">熊爱影视</string>
+    <string name="app_name">影视</string>
+    <string name="app_exit">再按一次返回键退出</string>
 
     <!-- Splash -->
     <string name="splash_info">正在载入配置</string>
@@ -12,8 +13,11 @@
     <string name="home_search">搜寻</string>
     <string name="home_push">推送</string>
     <string name="home_setting">设定</string>
-    <string name="home_recent">最近观看</string>
+    <string name="home_history">最近观看</string>
     <string name="home_recommend">更新推荐</string>
+
+    <!-- Vod -->
+    <string name="vod_last">上次看到<xliff:g name="name">%s</xliff:g></string>
 
     <!-- Detail -->
     <string name="detail_site">站源：<xliff:g name="name">%s</xliff:g></string>
@@ -25,7 +29,7 @@
     <string name="detail_content">简介：<xliff:g name="name">%s</xliff:g></string>
 
     <!-- Play -->
-    <string name="play_play">播放</string>
+    <string name="play">播放</string>
     <string name="play_next">下一集</string>
     <string name="play_prev">上一集</string>
     <string name="play_ready">准备播放：<xliff:g name="name">%s</xliff:g></string>
@@ -37,6 +41,7 @@
     <string name="setting_site">首页</string>
     <string name="setting_url">配置</string>
     <string name="setting_history">历史纪录</string>
+    <string name="setting_thumbnail">缩图</string>
 
     <!-- Dialog -->
     <string name="dialog_positive">确定</string>
@@ -49,6 +54,13 @@
     <string name="error_play_next">已经是最后一集了！</string>
     <string name="error_play_prev">已经是第一集了！</string>
     <string name="error_play_parse">无法解析网址</string>
+    <string name="error_play">不支援的影片格式</string>
+
+    <string-array name="select_thumbnail">
+        <item>高质量</item>
+        <item>中质量</item>
+        <item>低质量</item>
+    </string-array>
 
     <string-array name="select_scale">
         <item>预设</item>
