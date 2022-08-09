@@ -25,6 +25,7 @@ import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.databinding.ActivityHomeBinding;
 import com.fongmi.android.tv.db.AppDatabase;
 import com.fongmi.android.tv.event.RefreshEvent;
+import com.fongmi.android.tv.event.ServerEvent;
 import com.fongmi.android.tv.model.SiteViewModel;
 import com.fongmi.android.tv.player.Players;
 import com.fongmi.android.tv.server.Server;
@@ -50,11 +51,11 @@ import java.util.List;
 public class HomeActivity extends BaseActivity implements VodPresenter.OnClickListener, FuncPresenter.OnClickListener, HistoryPresenter.OnClickListener {
 
     private ActivityHomeBinding mBinding;
-    private SiteViewModel mSiteViewModel;
     private ArrayObjectAdapter mAdapter;
     private ArrayObjectAdapter mHistoryAdapter;
     private HistoryPresenter mHistoryPresenter;
     private FuncPresenter mFuncPresenter;
+    private SiteViewModel mSiteViewModel;
     private boolean mConfirmExit;
 
     public static void start(Activity activity) {
@@ -150,9 +151,10 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
     private void getHistory() {
         int historyIndex = getHistoryIndex();
         int recommendIndex = getRecommendIndex();
+        boolean isExist = recommendIndex - historyIndex == 2;
         List<History> items = AppDatabase.get().getHistoryDao().getAll();
-        if (items.isEmpty()) return;
-        if (recommendIndex - historyIndex != 2) mAdapter.add(historyIndex, new ListRow(mHistoryAdapter));
+        if (items.isEmpty() && isExist) mAdapter.removeItems(getHistoryIndex(), 1);
+        if (items.size() > 0 && !isExist) mAdapter.add(historyIndex, new ListRow(mHistoryAdapter));
         mHistoryAdapter.setItems(items, null);
     }
 
@@ -171,6 +173,12 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         switch (item.getResId()) {
             case R.string.home_vod:
                 VodActivity.start(this, mSiteViewModel.getResult().getValue());
+                break;
+            case R.string.home_search:
+                SearchActivity.start(this);
+                break;
+            case R.string.home_push:
+                PushActivity.start(this);
                 break;
             case R.string.home_setting:
                 SettingActivity.start(this);
@@ -206,13 +214,26 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onAdapterChanged(RefreshEvent event) {
+    public void onRefreshEvent(RefreshEvent event) {
         if (event.getType() == RefreshEvent.Type.VIDEO) {
             getVideo();
         } else if (event.getType() == RefreshEvent.Type.IMAGE) {
             mAdapter.notifyArrayItemRangeChanged(getRecommendIndex(), mAdapter.size() - getRecommendIndex());
         } else if (event.getType() == RefreshEvent.Type.HISTORY) {
             getHistory();
+        }
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onServerEvent(ServerEvent event) {
+        switch (event.getType()) {
+            case SEARCH:
+                SearchActivity.start(this, event.getText());
+                break;
+            case PUSH:
+                if (ApiConfig.get().getSite("push_agent") == null) return;
+                DetailActivity.start(this, "push_agent", event.getText());
+                break;
         }
     }
 

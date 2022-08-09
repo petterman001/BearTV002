@@ -73,6 +73,8 @@ public class Vod {
     @ElementList(entry = "dd", required = false, inline = true)
     private List<Flag> vodFlags;
 
+    private Site site;
+
     public String getVodId() {
         return TextUtils.isEmpty(vodId) ? "" : vodId;
     }
@@ -123,6 +125,14 @@ public class Vod {
 
     public List<Flag> getVodFlags() {
         return vodFlags = vodFlags == null ? new ArrayList<>() : vodFlags;
+    }
+
+    public Site getSite() {
+        return site;
+    }
+
+    public void setSite(Site site) {
+        this.site = site;
     }
 
     public int getRemarkVisible() {
@@ -200,12 +210,9 @@ public class Vod {
             this.activated = activated;
         }
 
-        public void deactivated() {
-            for (Episode item : getEpisodes()) item.deactivated();
-        }
-
-        public void setActivated(Episode episode) {
-            for (Episode item : getEpisodes()) item.setActivated(episode);
+        public void toggle(boolean activated, Episode episode) {
+            if (activated) for (Episode item : getEpisodes()) item.setActivated(episode);
+            else for (Episode item : getEpisodes()) item.deactivated();
         }
 
         @Override

@@ -49,9 +49,9 @@ import java.util.List;
 
 public class DetailActivity extends BaseActivity implements KeyDown.Listener {
 
+    private ActivityDetailBinding mBinding;
     private ViewControllerBottomBinding mControl;
     private ViewGroup.LayoutParams mFrameParams;
-    private ActivityDetailBinding mBinding;
     private ArrayObjectAdapter mFlagAdapter;
     private ArrayObjectAdapter mGroupAdapter;
     private ArrayObjectAdapter mEpisodeAdapter;
@@ -71,12 +71,12 @@ public class DetailActivity extends BaseActivity implements KeyDown.Listener {
         return getIntent().getStringExtra("id");
     }
 
-    private Vod.Flag getVodFlag() {
-        return (Vod.Flag) mFlagAdapter.get(mBinding.flag.getSelectedPosition());
+    private String getHistoryKey() {
+        return getKey().concat("_").concat(getId());
     }
 
-    private Vod.Flag.Episode getEpisode() {
-        return (Vod.Flag.Episode) mEpisodeAdapter.get(getEpisodePosition());
+    private Vod.Flag getVodFlag() {
+        return (Vod.Flag) mFlagAdapter.get(mBinding.flag.getSelectedPosition());
     }
 
     private int getEpisodePosition() {
@@ -118,7 +118,7 @@ public class DetailActivity extends BaseActivity implements KeyDown.Listener {
         mControl.next.setOnClickListener(view -> onNext());
         mControl.prev.setOnClickListener(view -> onPrev());
         mControl.scale.setOnClickListener(view -> onScale());
-        mControl.reset.setOnClickListener(view -> getPlayer());
+        mControl.reset.setOnClickListener(view -> getPlayer(true));
         mControl.speed.setOnClickListener(view -> mControl.speed.setText(Players.get().addSpeed()));
         mBinding.flag.addOnChildViewHolderSelectedListener(new OnChildViewHolderSelectedListener() {
             @Override
@@ -161,24 +161,25 @@ public class DetailActivity extends BaseActivity implements KeyDown.Listener {
         mSiteViewModel.detailContent(getKey(), getId());
     }
 
-    private void getPlayer() {
-        Vod.Flag.Episode item = getEpisode();
+    private void getPlayer(boolean reset) {
+        Vod.Flag.Episode item = (Vod.Flag.Episode) mEpisodeAdapter.get(getEpisodePosition());
         if (mFullscreen) Notify.show(ResUtil.getString(R.string.play_ready, item.getName()));
         mSiteViewModel.playerContent(getKey(), getVodFlag().getFlag(), item.getUrl());
         mBinding.progress.getRoot().setVisibility(View.VISIBLE);
-        addHistory(item);
+        updateHistory(item, reset);
     }
 
     private void setViewModel() {
         mSiteViewModel = new ViewModelProvider(this).get(SiteViewModel.class);
+        mSiteViewModel.player.observe(this, result -> Players.get().setMediaSource(result));
         mSiteViewModel.result.observe(this, result -> {
-            if (result.getUrl().length() > 0) Players.get().setMediaSource(result);
-            else if (result.getList().isEmpty()) mBinding.progressLayout.showErrorText();
+            if (result.getList().isEmpty()) mBinding.progressLayout.showErrorText();
             else setDetail(result.getList().get(0));
         });
     }
 
     private void setDetail(Vod item) {
+        Players.get().setKey(getHistoryKey());
         mBinding.progressLayout.showContent();
         mBinding.video.setTag(item.getVodPic());
         mBinding.name.setText(item.getVodName());
@@ -199,41 +200,25 @@ public class DetailActivity extends BaseActivity implements KeyDown.Listener {
         else view.setText(ResUtil.getString(resId, text));
     }
 
-    private void checkHistory() {
-        History history = AppDatabase.get().getHistoryDao().find(getKey() + "_" + getId());
-        if (history != null) {
-            setFlagActivated(history.getFlag());
-            setEpisodeActivated(history.getEpisode());
-        } else {
-            setFlagActivated((Vod.Flag) mFlagAdapter.get(0));
-            setEpisodeActivated((Vod.Flag.Episode) mEpisodeAdapter.get(0));
-        }
-    }
-
     private void setFlagActivated(Vod.Flag item) {
         if (mBinding.flag.isComputingLayout()) return;
         for (int i = 0; i < mFlagAdapter.size(); i++) {
             Vod.Flag flag = (Vod.Flag) mFlagAdapter.get(i);
             flag.setActivated(flag.equals(item));
-            if (flag.isActivated()) {
-                mBinding.flag.setSelectedPosition(i);
-                mEpisodeAdapter.setItems(flag.getEpisodes(), null);
-                setGroup(flag.getEpisodes().size());
-            }
+            if (!flag.isActivated()) continue;
+            mBinding.flag.setSelectedPosition(i);
+            mEpisodeAdapter.setItems(flag.getEpisodes(), null);
+            setGroup(flag.getEpisodes().size());
         }
         mFlagAdapter.notifyArrayItemRangeChanged(0, mFlagAdapter.size());
     }
 
     private void setEpisodeActivated(Vod.Flag.Episode item) {
         mCurrent = mBinding.flag.getSelectedPosition();
-        for (int i = 0; i < mFlagAdapter.size(); i++) {
-            Vod.Flag flag = (Vod.Flag) mFlagAdapter.get(i);
-            if (mCurrent == i) flag.setActivated(item);
-            else flag.deactivated();
-        }
+        for (int i = 0; i < mFlagAdapter.size(); i++) ((Vod.Flag) mFlagAdapter.get(i)).toggle(mCurrent == i, item);
         mEpisodeAdapter.notifyArrayItemRangeChanged(0, mEpisodeAdapter.size());
         mHandler.post(() -> mBinding.episode.setSelectedPosition(getEpisodePosition()));
-        getPlayer();
+        getPlayer(false);
     }
 
     private void setGroup(int size) {
@@ -283,26 +268,59 @@ public class DetailActivity extends BaseActivity implements KeyDown.Listener {
         Prefers.putScale(scale);
     }
 
-    private void addHistory(Vod.Flag.Episode item) {
+    private void checkHistory() {
+        History history = AppDatabase.get().getHistoryDao().find(getHistoryKey());
+        if (history != null) {
+            setFlagActivated(history.getFlag());
+            setEpisodeActivated(history.getEpisode());
+        } else {
+            createHistory();
+            setFlagActivated((Vod.Flag) mFlagAdapter.get(0));
+            setEpisodeActivated((Vod.Flag.Episode) mEpisodeAdapter.get(0));
+        }
+    }
+
+    private void createHistory() {
         History history = new History();
-        history.setKey(getKey() + "_" + getId());
-        history.setVodFlag(getVodFlag().getFlag());
-        history.setEpisodeUrl(item.getUrl());
-        history.setVodRemarks(item.getName());
-        history.setCreateTime(System.currentTimeMillis());
+        history.setKey(getHistoryKey());
         history.setVodPic(mBinding.video.getTag().toString());
         history.setVodName(mBinding.name.getText().toString());
         AppDatabase.get().getHistoryDao().insertOrUpdate(history);
+    }
+
+    private void updateHistory(Vod.Flag.Episode item, boolean reset) {
+        History history = AppDatabase.get().getHistoryDao().find(getHistoryKey());
+        reset = reset || !item.getUrl().equals(history.getEpisodeUrl());
+        long duration = reset ? 0 : history.getDuration();
+        history.setDuration(duration);
+        history.setEpisodeUrl(item.getUrl());
+        history.setVodRemarks(item.getName());
+        history.setVodFlag(getVodFlag().getFlag());
+        history.setCreateTime(System.currentTimeMillis());
+        AppDatabase.get().getHistoryDao().update(history);
         EventBus.getDefault().post(RefreshEvent.history());
     }
 
     private void updateHistory() {
-
+        History history = AppDatabase.get().getHistoryDao().find(getHistoryKey());
+        if (history != null) {
+            history.setDuration(Players.get().getCurrentPosition());
+            AppDatabase.get().getHistoryDao().update(history);
+        }
     }
 
+    private final Runnable mHideCenter = new Runnable() {
+        @Override
+        public void run() {
+            mBinding.center.action.setImageResource(R.drawable.ic_play);
+            mBinding.center.getRoot().setVisibility(View.GONE);
+        }
+    };
+
     @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onPlaybackStateChanged(PlayerEvent event) {
+    public void onPlayerEvent(PlayerEvent event) {
         mBinding.progress.getRoot().setVisibility(event.getState() == Player.STATE_BUFFERING ? View.VISIBLE : View.GONE);
+        if (event.getState() == Player.STATE_ENDED) onNext();
         Notify.show(event.getMsg());
     }
 
@@ -322,9 +340,9 @@ public class DetailActivity extends BaseActivity implements KeyDown.Listener {
 
     @Override
     public void onSeekTo(int time) {
-        mBinding.center.action.setImageResource(R.drawable.ic_play);
-        mBinding.center.getRoot().setVisibility(View.GONE);
+        mHandler.postDelayed(mHideCenter, 250);
         Players.get().seekTo(time);
+        Players.get().play();
         mKeyDown.resetTime();
     }
 
@@ -361,6 +379,7 @@ public class DetailActivity extends BaseActivity implements KeyDown.Listener {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        updateHistory();
         Players.get().stop();
         EventBus.getDefault().unregister(this);
     }
