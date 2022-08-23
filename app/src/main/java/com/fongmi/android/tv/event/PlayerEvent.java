@@ -2,17 +2,36 @@ package com.fongmi.android.tv.event;
 
 import android.text.TextUtils;
 
+import com.fongmi.android.tv.utils.ResUtil;
+
+import org.greenrobot.eventbus.EventBus;
+
 public class PlayerEvent {
 
-    private int state;
+    private final int state;
+    private boolean retry;
     private String msg;
 
-    public PlayerEvent(int state) {
+    public static void error(int resId) {
+        EventBus.getDefault().post(new PlayerEvent(ResUtil.getString(resId), false));
+    }
+
+    public static void error(int resId, boolean retry) {
+        EventBus.getDefault().post(new PlayerEvent(ResUtil.getString(resId), retry));
+    }
+
+    public static void state(int state) {
+        EventBus.getDefault().post(new PlayerEvent(state));
+    }
+
+    private PlayerEvent(int state) {
         this.state = state;
     }
 
-    public PlayerEvent(String msg) {
+    private PlayerEvent(String msg, boolean retry) {
         this.msg = msg;
+        this.retry = retry;
+        this.state = -1;
     }
 
     public String getMsg() {
@@ -21,5 +40,9 @@ public class PlayerEvent {
 
     public int getState() {
         return state;
+    }
+
+    public boolean isRetry() {
+        return retry;
     }
 }

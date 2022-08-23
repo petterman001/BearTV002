@@ -23,7 +23,6 @@ import com.fongmi.android.tv.bean.History;
 import com.fongmi.android.tv.bean.Result;
 import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.databinding.ActivityHomeBinding;
-import com.fongmi.android.tv.db.AppDatabase;
 import com.fongmi.android.tv.event.RefreshEvent;
 import com.fongmi.android.tv.event.ServerEvent;
 import com.fongmi.android.tv.model.SiteViewModel;
@@ -39,6 +38,7 @@ import com.fongmi.android.tv.ui.presenter.VodPresenter;
 import com.fongmi.android.tv.utils.Clock;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.ResUtil;
+import com.fongmi.android.tv.utils.Updater;
 import com.google.common.collect.Lists;
 
 import org.greenrobot.eventbus.EventBus;
@@ -61,6 +61,7 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
     public static void start(Activity activity) {
         activity.startActivity(new Intent(activity, HomeActivity.class));
         activity.finish();
+        Updater.check();
     }
 
     @Override
@@ -128,11 +129,10 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
     }
 
     private void addVideo(Result result) {
-        int columns = result.getList().size() % 6 == 0 ? 6 : 5;
         List<ListRow> rows = new ArrayList<>();
-        for (List<Vod> items : Lists.partition(result.getList(), columns)) {
-            ArrayObjectAdapter adapter = new ArrayObjectAdapter(new VodPresenter(this, columns));
-            adapter.addAll(0, items);
+        for (List<Vod> items : Lists.partition(result.getList(), 5)) {
+            ArrayObjectAdapter adapter = new ArrayObjectAdapter(new VodPresenter(this));
+            adapter.setItems(items, null);
             rows.add(new ListRow(adapter));
         }
         mAdapter.addAll(mAdapter.size(), rows);
@@ -152,7 +152,7 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         int historyIndex = getHistoryIndex();
         int recommendIndex = getRecommendIndex();
         boolean isExist = recommendIndex - historyIndex == 2;
-        List<History> items = AppDatabase.get().getHistoryDao().getAll();
+        List<History> items = History.find(ApiConfig.getCid());
         if (items.isEmpty() && isExist) mAdapter.removeItems(getHistoryIndex(), 1);
         if (items.size() > 0 && !isExist) mAdapter.add(historyIndex, new ListRow(mHistoryAdapter));
         mHistoryAdapter.setItems(items, null);
@@ -198,8 +198,7 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
 
     @Override
     public void onItemDelete(History item) {
-        mHistoryAdapter.remove(item);
-        AppDatabase.get().getHistoryDao().delete(item.getKey());
+        mHistoryAdapter.remove(item.delete());
         if (mHistoryAdapter.size() > 0) return;
         mAdapter.removeItems(getHistoryIndex(), 1);
         mHistoryPresenter.setDelete(false);
@@ -242,6 +241,8 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         if (mHistoryPresenter.isDelete()) {
             mHistoryPresenter.setDelete(false);
             mHistoryAdapter.notifyArrayItemRangeChanged(0, mHistoryAdapter.size());
+        } else if (mBinding.recycler.getSelectedPosition() != 1) {
+            mBinding.recycler.smoothScrollToPosition(1);
         } else if (!mConfirmExit) {
             mConfirmExit = true;
             Notify.show(R.string.app_exit);

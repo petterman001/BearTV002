@@ -5,27 +5,10 @@
     <string name="app_exit">再按一次返回键退出</string>
 
     <!-- Splash -->
-    <string name="splash_info">正在载入配置</string>
-
-    <!-- Home -->
-    <string name="home_vod">点播</string>
-    <string name="home_live">直播</string>
-    <string name="home_search">搜寻</string>
-    <string name="home_push">推送</string>
-    <string name="home_setting">设定</string>
-    <string name="home_history">最近观看</string>
-    <string name="home_recommend">更新推荐</string>
+    <string name="splash_info">正在加载配置</string>
 
     <!-- Vod -->
     <string name="vod_last">上次看到<xliff:g name="name">%s</xliff:g></string>
-
-    <!-- Search -->
-    <string name="search_hint">输入关键字…</string>
-    <string name="search_clear">清空</string>
-    <string name="search_remote">远程</string>
-
-    <!-- Push -->
-    <string name="push_info">手机或电脑连接同一个局域网，扫描 QR Code 或浏览器输入网址\n<xliff:g name="name">%s</xliff:g></string>
 
     <!-- Detail -->
     <string name="detail_site">站源：<xliff:g name="name">%s</xliff:g></string>
@@ -45,24 +28,30 @@
     <string name="play_reset">重置</string>
     <string name="play_oped">片头片尾</string>
 
+    <!-- Parse -->
+    <string name="parse">解析</string>
+    <string name="parse_from">解析来自：<xliff:g name="name">%s</xliff:g></string>
+
     <!-- Setting -->
     <string name="setting_site">首页</string>
     <string name="setting_url">配置</string>
-    <string name="setting_history">历史</string>
     <string name="setting_thumbnail">缩图</string>
 
     <!-- Dialog -->
     <string name="dialog_positive">确定</string>
     <string name="dialog_negative">取消</string>
-    <string name="dialog_config_url_hint">请输入配置接口</string>
+    <string name="dialog_config_hint">请输入配置接口</string>
 
     <!-- Error -->
     <string name="error_config_get">配置取得失败</string>
     <string name="error_config_parse">配置解析失败</string>
     <string name="error_play_next">已经是最后一集了！</string>
     <string name="error_play_prev">已经是第一集了！</string>
-    <string name="error_play_parse">无法解析网址</string>
-    <string name="error_play">不支援的影片格式</string>
+    <string name="error_play_parse">播放地址解析失败</string>
+    <string name="error_play_load">播放数据加载失败</string>
+    <string name="error_play_format">不支援的影片格式</string>
+    <string name="error_episode">暂无播放数据</string>
+    <string name="error_empty">找不到数据</string>
 
     <!-- UNIT -->
     <string name="second"><xliff:g name="name">%s</xliff:g> 秒</string>

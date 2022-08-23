@@ -1,0 +1,8 @@
+<resources>
+
+    <!-- Nav -->
+    <string name="nav_home">Home</string>
+    <string name="nav_vod">Vod</string>
+    <string name="nav_setting">Setting</string>
+
+</resources>

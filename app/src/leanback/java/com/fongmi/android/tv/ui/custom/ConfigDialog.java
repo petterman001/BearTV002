@@ -9,6 +9,8 @@ import android.view.inputmethod.EditorInfo;
 
 import androidx.appcompat.app.AlertDialog;
 
+import com.fongmi.android.tv.R;
+import com.fongmi.android.tv.SettingCallback;
 import com.fongmi.android.tv.databinding.DialogConfigBinding;
 import com.fongmi.android.tv.event.ServerEvent;
 import com.fongmi.android.tv.server.Server;
@@ -24,15 +26,15 @@ import org.greenrobot.eventbus.ThreadMode;
 public class ConfigDialog implements DialogInterface.OnDismissListener {
 
     private DialogConfigBinding binding;
+    private SettingCallback callback;
     private AlertDialog dialog;
-    private Callback callback;
 
     public static void show(Activity activity) {
         new ConfigDialog().create(activity);
     }
 
     public void create(Activity activity) {
-        callback = (Callback) activity;
+        callback = (SettingCallback) activity;
         binding = DialogConfigBinding.inflate(LayoutInflater.from(activity));
         dialog = new MaterialAlertDialogBuilder(activity).setView(binding.getRoot()).create();
         EventBus.getDefault().register(this);
@@ -43,7 +45,7 @@ public class ConfigDialog implements DialogInterface.OnDismissListener {
 
     private void initDialog() {
         WindowManager.LayoutParams params = dialog.getWindow().getAttributes();
-        params.width = (int) (ResUtil.getScreenWidthPx() * 0.65f);
+        params.width = (int) (ResUtil.getScreenWidthPx() * 0.7f);
         dialog.getWindow().setAttributes(params);
         dialog.getWindow().setDimAmount(0);
         dialog.setOnDismissListener(this);
@@ -51,9 +53,11 @@ public class ConfigDialog implements DialogInterface.OnDismissListener {
     }
 
     private void initView() {
+        String address = Server.get().getAddress(false);
         binding.text.setText(Prefers.getUrl());
         binding.text.setSelection(binding.text.getText().length());
-        binding.code.setImageBitmap(QRCode.getBitmap(Server.get().getAddress(false), 150, 0));
+        binding.code.setImageBitmap(QRCode.getBitmap(address, 200, 0));
+        binding.info.setText(ResUtil.getString(R.string.dialog_config_info, address));
     }
 
     private void initEvent() {
@@ -66,8 +70,9 @@ public class ConfigDialog implements DialogInterface.OnDismissListener {
     }
 
     private void onPositive(View view) {
-        Prefers.putUrl(binding.text.getText().toString().trim());
-        callback.setConfig();
+        String url = binding.text.getText().toString().trim();
+        if (url.startsWith("clan")) url = url.replace("clan", "file");
+        callback.setConfig(url);
         dialog.dismiss();
     }
 
@@ -85,10 +90,5 @@ public class ConfigDialog implements DialogInterface.OnDismissListener {
     @Override
     public void onDismiss(DialogInterface dialogInterface) {
         EventBus.getDefault().unregister(this);
-    }
-
-    public interface Callback {
-
-        void setConfig();
     }
 }

@@ -135,6 +135,10 @@ public class Vod {
         this.site = site;
     }
 
+    public int getYearVisible() {
+        return getVodYear().isEmpty() ? View.GONE : View.VISIBLE;
+    }
+
     public int getRemarkVisible() {
         return getVodRemarks().isEmpty() ? View.GONE : View.VISIBLE;
     }
@@ -143,7 +147,7 @@ public class Vod {
         String[] playFlags = getVodPlayFrom().split("\\$\\$\\$");
         String[] playUrls = getVodPlayUrl().split("\\$\\$\\$");
         for (int i = 0; i < playFlags.length; i++) {
-            if (playFlags[i].isEmpty()) continue;
+            if (playFlags[i].isEmpty() || i >= playUrls.length) continue;
             Vod.Flag item = new Vod.Flag(playFlags[i]);
             item.createEpisode(playUrls[i]);
             getVodFlags().add(item);
@@ -197,8 +201,8 @@ public class Vod {
             String[] urls = data.contains("#") ? data.split("#") : new String[]{data};
             for (String url : urls) {
                 String[] split = url.split("\\$");
-                if (split.length >= 2) getEpisodes().add(new Vod.Flag.Episode(split[0], split[1]));
-                else getEpisodes().add(new Vod.Flag.Episode(ResUtil.getString(R.string.play), url));
+                Episode episode = split.length >= 2 ? new Vod.Flag.Episode(split[0], split[1]) : new Vod.Flag.Episode(ResUtil.getString(R.string.play), url);
+                if (!getEpisodes().contains(episode)) getEpisodes().add(episode);
             }
         }
 
@@ -238,10 +242,6 @@ public class Vod {
 
             private boolean activated;
 
-            public Episode(String url) {
-                this("", url);
-            }
-
             public Episode(String name, String url) {
                 this.name = name;
                 this.url = url;
@@ -272,7 +272,7 @@ public class Vod {
                 if (this == obj) return true;
                 if (!(obj instanceof Episode)) return false;
                 Episode it = (Episode) obj;
-                return getUrl().equals(it.getUrl());
+                return getUrl().equals(it.getUrl()) || getName().equals(it.getName());
             }
         }
     }

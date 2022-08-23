@@ -7,25 +7,8 @@
     <!-- Splash -->
     <string name="splash_info">Loading configuration</string>
 
-    <!-- Home -->
-    <string name="home_vod">Vod</string>
-    <string name="home_live">Live</string>
-    <string name="home_search">Search</string>
-    <string name="home_push">Push</string>
-    <string name="home_setting">Setting</string>
-    <string name="home_history">History</string>
-    <string name="home_recommend">Recommend</string>
-
     <!-- Vod -->
     <string name="vod_last">Last seen <xliff:g name="name">%s</xliff:g></string>
-
-    <!-- Search -->
-    <string name="search_hint">Keywords…</string>
-    <string name="search_clear">Clear</string>
-    <string name="search_remote">Remote</string>
-
-    <!-- Push -->
-    <string name="push_info">Connect phone or pc to LAN and scan QR Code or enter the URL in browser\n<xliff:g name="name">%s</xliff:g></string>
 
     <!-- Detail -->
     <string name="detail_site">Site: <xliff:g name="name">%s</xliff:g></string>
@@ -45,16 +28,19 @@
     <string name="play_reset">Reset</string>
     <string name="play_oped">OP&amp;ED</string>
 
+    <!-- Parse -->
+    <string name="parse">Parse</string>
+    <string name="parse_from">Parse from: <xliff:g name="name">%s</xliff:g></string>
+
     <!-- Setting -->
     <string name="setting_site">Home site</string>
-    <string name="setting_url">Configure</string>
-    <string name="setting_history">History</string>
+    <string name="setting_url">Configuration</string>
     <string name="setting_thumbnail">Thumbnail</string>
 
     <!-- Dialog -->
     <string name="dialog_positive">OK</string>
     <string name="dialog_negative">Cancel</string>
-    <string name="dialog_config_url_hint">Please enter the configuration url</string>
+    <string name="dialog_config_hint">Please enter the configuration url</string>
 
     <!-- Error -->
     <string name="error_config_get">Configuration get failed</string>
@@ -62,7 +48,10 @@
     <string name="error_play_next">It\'s the last episode!</string>
     <string name="error_play_prev">It\'s the first episode!</string>
     <string name="error_play_parse">Unable to parse url</string>
-    <string name="error_play">Unsupported video format</string>
+    <string name="error_play_load">Unable to load url</string>
+    <string name="error_play_format">Unsupported video format</string>
+    <string name="error_episode">No episode data</string>
+    <string name="error_empty">Not found</string>
 
     <!-- UNIT -->
     <string name="second"><xliff:g name="name">%s</xliff:g> s</string>

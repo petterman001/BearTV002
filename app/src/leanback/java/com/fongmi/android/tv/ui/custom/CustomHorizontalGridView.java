@@ -8,13 +8,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.leanback.widget.HorizontalGridView;
 
 import com.fongmi.android.tv.R;
+import com.fongmi.android.tv.utils.ResUtil;
 
 public class CustomHorizontalGridView extends HorizontalGridView {
 
@@ -35,7 +35,7 @@ public class CustomHorizontalGridView extends HorizontalGridView {
     @Override
     protected void initAttributes(@NonNull Context context, @Nullable AttributeSet attrs) {
         super.initAttributes(context, attrs);
-        this.shake = AnimationUtils.loadAnimation(getContext(), R.anim.shake);
+        this.shake = ResUtil.getAnim(R.anim.shake);
     }
 
     @Override
@@ -55,16 +55,7 @@ public class CustomHorizontalGridView extends HorizontalGridView {
     }
 
     @Override
-    public boolean dispatchKeyEvent(KeyEvent event) {
-        if (event.getAction() == KeyEvent.ACTION_DOWN) {
-            if (event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
-                if (getSelectedPosition() != 0) {
-                    if (getVisibility() != View.VISIBLE) setVisibility(View.VISIBLE);
-                    setSelectedPositionSmooth(0);
-                    return true;
-                }
-            }
-        }
+    public boolean dispatchKeyEvent(@NonNull KeyEvent event) {
         return super.dispatchKeyEvent(event) || executeKeyEvent(event);
     }
 

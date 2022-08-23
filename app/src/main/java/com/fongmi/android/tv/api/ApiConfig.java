@@ -40,6 +40,7 @@ public class ApiConfig {
     private Handler handler;
     private Parse parse;
     private Site home;
+    private int cid;
 
     private static class Loader {
         static volatile ApiConfig INSTANCE = new ApiConfig();
@@ -55,6 +56,10 @@ public class ApiConfig {
 
     public static String getSiteName(String key) {
         return get().getSite(key).getName();
+    }
+
+    public static int getCid() {
+        return get().cid;
     }
 
     public ApiConfig init() {
@@ -82,6 +87,7 @@ public class ApiConfig {
             JsonReader reader = new JsonReader(new FileReader(FileUtil.getLocal(url)));
             parseConfig(new Gson().fromJson(reader, JsonObject.class), callback);
         } catch (Exception e) {
+            e.printStackTrace();
             handler.post(() -> callback.error(R.string.error_config_get));
         }
     }
@@ -90,6 +96,7 @@ public class ApiConfig {
         try {
             parseConfig(new Gson().fromJson(OKHttp.newCall(url).execute().body().string(), JsonObject.class), callback);
         } catch (Exception e) {
+            e.printStackTrace();
             handler.post(() -> callback.error(R.string.error_config_get));
         }
     }
@@ -108,12 +115,18 @@ public class ApiConfig {
 
     private void parseJson(JsonObject object) {
         for (JsonElement element : object.get("sites").getAsJsonArray()) {
-            Site site = Site.objectFrom(element);
+            Site site = Site.objectFrom(element).sync();
             site.setExt(parseExt(site.getExt()));
             if (site.getKey().equals(Prefers.getHome())) setHome(site);
-            sites.add(site);
+            if (!sites.contains(site)) sites.add(site);
+        }
+        for (JsonElement element : object.get("parses").getAsJsonArray()) {
+            Parse parse = Parse.objectFrom(element);
+            if (parse.getName().equals(Prefers.getParse())) setParse(parse);
+            if (!parses.contains(parse)) parses.add(parse);
         }
         if (home == null) setHome(sites.isEmpty() ? new Site() : sites.get(0));
+        if (parse == null) setParse(parses.isEmpty() ? new Parse() : parses.get(0));
         flags.addAll(Json.safeList(object, "flags"));
         ads.addAll(Json.safeList(object, "ads"));
     }
@@ -126,22 +139,28 @@ public class ApiConfig {
     }
 
     private void parseJar(String spider) throws Exception {
-        if (spider.contains(";md5")) spider = spider.split(";md5")[0];
-        if (spider.startsWith("http")) {
-            FileUtil.write(FileUtil.getJar(), OKHttp.newCall(spider).execute().body().bytes());
+        String[] texts = spider.split(";md5;");
+        String md5 = spider.startsWith("http") && texts.length > 1 ? texts[1].trim() : "";
+        String url = texts[0];
+        if (md5.length() > 0 && FileUtil.equals(md5)) {
             loader.load(FileUtil.getJar());
-        } else if (spider.startsWith("file")) {
-            loader.load(FileUtil.getLocal(spider));
-        } else if (!spider.isEmpty()) {
-            parseJar(convert(spider));
+        } else if (url.startsWith("http")) {
+            FileUtil.write(FileUtil.getJar(), OKHttp.newCall(url).execute().body().bytes());
+            loader.load(FileUtil.getJar());
+        } else if (url.startsWith("file")) {
+            loader.load(FileUtil.getLocal(url));
+        } else if (!url.isEmpty()) {
+            parseJar(convert(url));
         }
     }
 
     private String convert(String text) {
         if (TextUtils.isEmpty(text)) return "";
+        if (text.startsWith("clan")) return text.replace("clan", "file");
         if (text.startsWith(".")) text = text.substring(1);
         if (text.startsWith("/")) text = text.substring(1);
         Uri uri = Uri.parse(Prefers.getUrl());
+        if (uri.getLastPathSegment() == null) return uri.getScheme() + "://" + text;
         return uri.toString().replace(uri.getLastPathSegment(), text);
     }
 
@@ -166,8 +185,17 @@ public class ApiConfig {
         return index == -1 ? new Site() : sites.get(index);
     }
 
+    public Parse getParse(String name) {
+        int index = parses.indexOf(Parse.get(name));
+        return index == -1 ? null : parses.get(index);
+    }
+
     public List<Site> getSites() {
         return sites;
+    }
+
+    public List<Parse> getParses() {
+        return parses;
     }
 
     public String getAds() {
@@ -184,8 +212,24 @@ public class ApiConfig {
 
     public void setHome(Site home) {
         this.home = home;
-        this.home.setHome(true);
+        this.home.setActivated(true);
         Prefers.putHome(home.getKey());
+        for (Site item : sites) item.setActivated(home);
+    }
+
+    public Parse getParse() {
+        return parse == null ? new Parse() : parse;
+    }
+
+    public void setParse(Parse parse) {
+        this.parse = parse;
+        this.parse.setActivated(true);
+        Prefers.putParse(parse.getName());
+        for (Parse item : parses) item.setActivated(parse);
+    }
+
+    public void setCid(int cid) {
+        this.cid = cid;
     }
 
     public ApiConfig clear() {
